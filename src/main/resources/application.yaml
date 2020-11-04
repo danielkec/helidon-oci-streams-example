@@ -1,0 +1,42 @@
+server.port: 8080
+server.static.classpath.location: /WEB
+server.static.classpath.welcome: index.html
+
+oci:
+  tenant: helidondev
+  user: daniel.kec@oracle.com
+  token: ${OCI_AUTH_TOKEN}
+  test-stream:
+    name: TestStream
+    endpoint: cell-1.streaming.us-phoenix-1.oci.oraclecloud.com
+    port: 9092
+    streampool-ocid: ocid1.streampool.oc1.phx.amaaaaaamevwycaap72ouurhfjrakuccakjpse5kenpkm5oikbgaadtq6byq
+
+mp.messaging:
+
+  incoming.from-stream:
+    connector: helidon-kafka
+    topic: ${oci.test-stream.name}
+    auto.offset.reset: latest
+    enable.auto.commit: true
+    group.id: example-group-id
+
+  outgoing.to-stream:
+    connector: helidon-kafka
+    topic: ${oci.test-stream.name}
+
+  connector:
+    helidon-kafka:
+      bootstrap.servers: ${oci.test-stream.endpoint}:${oci.test-stream.port}
+      sasl.mechanism: PLAIN
+      security.protocol: SASL_SSL
+      sasl.jaas.config:  >-
+        org.apache.kafka.common.security.plain.PlainLoginModule
+        required
+        username="${oci.tenant}/${oci.user}/${oci.test-stream.streampool-ocid}"
+        password="${oci.token}";
+
+      key.serializer: org.apache.kafka.common.serialization.StringSerializer
+      value.serializer: org.apache.kafka.common.serialization.StringSerializer
+      key.deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
