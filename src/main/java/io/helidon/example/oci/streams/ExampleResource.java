@@ -3,28 +3,29 @@ package io.helidon.example.oci.streams;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 
-import io.helidon.common.reactive.BufferedEmittingPublisher;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 import org.eclipse.microprofile.reactive.messaging.Incoming;
-import org.eclipse.microprofile.reactive.messaging.Message;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
-import org.reactivestreams.FlowAdapters;
-import org.reactivestreams.Publisher;
 
-@Path("/example")
+@Path("/ui/example")
 @ApplicationScoped
 public class ExampleResource {
 
     private final SubmissionPublisher<String> broadCastPublisher = new SubmissionPublisher<>();
-    private final BufferedEmittingPublisher<Message<String>> emitter = BufferedEmittingPublisher.create();
+
+    @Inject
+    @Channel("to-stream")
+    Emitter<String> emitter;
 
     @Incoming("from-stream")
     public void eachMessageFromStream(String payload) {
@@ -33,17 +34,13 @@ public class ExampleResource {
         broadCastPublisher.submit(payload);
     }
 
-    @Outgoing("to-stream")
-    public Publisher<Message<String>> registerEmitter() {
-        return FlowAdapters.toPublisher(emitter);
-    }
 
     @Path("/send/{msg}")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public void getSend(@PathParam("msg") String msg) {
         // Send message to the emitter registered as a publisher of "to-stream" channel
-        emitter.emit(Message.of(msg));
+        emitter.send(msg);
     }
 
     @GET

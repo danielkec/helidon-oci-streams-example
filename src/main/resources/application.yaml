@@ -1,6 +1,11 @@
-server.port: 8080
-server.static.classpath.location: /WEB
-server.static.classpath.welcome: index.html
+server:
+  port: 8080
+  host: 0.0.0.0
+
+  features.static-content.classpath:
+    - context: /ui
+      location: /WEB
+      welcome: index.html
 
 oci:
   tenant: helidondev
@@ -17,13 +22,14 @@ mp.messaging:
   incoming.from-stream:
     connector: helidon-kafka
     topic: ${oci.test-stream.name}
-    auto.offset.reset: latest
-    enable.auto.commit: true
-    group.id: example-group-id
+    enable.auto.commit: false
+    group.id: example-group-1
 
   outgoing.to-stream:
     connector: helidon-kafka
     topic: ${oci.test-stream.name}
+    # KIP-679 Compatibility issue with OCI Streams Kafka API and newer clients
+    enable.idempotence: false
 
   connector:
     helidon-kafka:
